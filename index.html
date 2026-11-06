@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Card Universe - 158 Gacha Game</title>
+  <title>Card Universe - 158 Gacha Game & Social</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -19,12 +19,12 @@
       --mythical: #a855f7;
       --transcendent: #ec4899;
       --infinity: #06b6d4;
+      --admin-blue: #3b82f6;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
-    /* VFX Canvas */
     #vfx-canvas {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       pointer-events: none; z-index: 999; display: none;
@@ -38,7 +38,7 @@
     }
     .auth-card {
       background: var(--panel); border: 1px solid #2a2e45; border-radius: 16px;
-      padding: 2rem; width: 360px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      padding: 2rem; width: 380px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     }
     .auth-card h1 { font-family: 'Cinzel', serif; color: var(--accent); margin-bottom: 1rem; }
     .auth-input {
@@ -56,15 +56,25 @@
     .app { display: none; min-height: 100vh; flex-direction: column; }
     header {
       background: var(--panel); border-bottom: 1px solid #2a2e45; padding: 1rem 2rem;
-      display: flex; justify-content: space-between; align-items: center; sticky: top; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center; z-index: 100; flex-wrap: wrap; gap: 1rem;
     }
-    .brand { font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 900; color: #fff; }
-    .user-info { display: flex; gap: 1.5rem; align-items: center; font-weight: 600; }
+    .brand { font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 0.5rem; }
+    .verified-badge {
+      background: var(--admin-blue); color: white; border-radius: 50%; width: 18px; height: 18px;
+      font-size: 11px; display: inline-flex; justify-content: center; align-items: center; font-weight: bold;
+    }
+    .user-info { display: flex; gap: 1.2rem; align-items: center; font-weight: 600; flex-wrap: wrap; }
     .coins { color: #f59e0b; display: flex; align-items: center; gap: 0.3rem; }
 
-    main { flex: 1; padding: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .nav-tabs { display: flex; gap: 0.5rem; background: #0d0e14; padding: 0.4rem; border-radius: 10px; border: 1px solid #2a2e45; }
+    .nav-tab { padding: 0.5rem 1rem; background: transparent; border: none; color: #9ca3af; font-weight: 600; cursor: pointer; border-radius: 6px; }
+    .nav-tab.active { background: var(--accent); color: white; }
 
-    /* Controls */
+    main { flex: 1; padding: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Controls & Dashboard */
     .dashboard { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
     .roll-btns { display: flex; gap: 1rem; }
     .btn {
@@ -75,8 +85,18 @@
     .btn:active { transform: translateY(0); }
     .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; }
     .btn-gold { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .btn-admin { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
 
-    /* Tabs & Filter */
+    /* Admin Panel */
+    .admin-panel {
+      background: #181b2b; border: 2px solid var(--admin-blue); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem;
+    }
+    .admin-panel h3 { color: var(--admin-blue); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .admin-box { background: #0d0e14; padding: 1rem; border-radius: 10px; border: 1px solid #2a2e45; }
+    .admin-box input, .admin-box select { width: 100%; padding: 0.5rem; margin: 0.5rem 0; background: #13151f; border: 1px solid #2a2e45; color: white; border-radius: 6px; }
+
+    /* Filter & Grid */
     .filter-bar { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; }
     .filter-chip {
       padding: 0.4rem 0.8rem; background: #1a1d2d; border: 1px solid #2a2e45;
@@ -84,10 +104,7 @@
     }
     .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-    /* Grid */
-    .card-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1.2rem;
-    }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1.2rem; }
     .card-item {
       background: var(--card-bg); border-radius: 12px; padding: 1rem; position: relative;
       border: 2px solid #2a2e45; transition: all 0.2s; display: flex; flex-direction: column;
@@ -120,7 +137,16 @@
     .card-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; line-height: 1.2; }
     .card-count { font-size: 0.75rem; color: #9ca3af; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; }
 
-    /* Roll Overlay Modal */
+    /* Social Section */
+    .social-list { display: flex; flex-direction: column; gap: 1rem; max-width: 800px; margin: 0 auto; }
+    .user-row {
+      background: var(--panel); border: 1px solid #2a2e45; padding: 1rem 1.5rem; border-radius: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .user-row-left { display: flex; align-items: center; gap: 1rem; }
+    .user-row-actions { display: flex; gap: 0.5rem; }
+
+    /* Roll Modal */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
       display: none; justify-content: center; align-items: center; z-index: 600; flex-direction: column;
@@ -143,19 +169,27 @@
   <div class="auth-overlay" id="auth-screen">
     <div class="auth-card">
       <h1 id="auth-title">LOGIN</h1>
-      <input type="text" id="username" class="auth-input" placeholder="Username">
+      <input type="text" id="username" class="auth-input" placeholder="Username (Min 5 chars / 4 for rare)">
       <input type="password" id="password" class="auth-input" placeholder="Password">
       <button class="auth-btn" id="auth-submit-btn" onclick="handleAuth()">Play</button>
       <div class="auth-toggle" onclick="toggleAuthMode()">
         <span id="auth-toggle-text">Need an account? Register</span>
       </div>
+      <p style="font-size: 0.75rem; color: #6b7280; margin-top: 1rem;">Admin: heinth | Extra Rare Users: hein, boss, davd, divf, dove</p>
     </div>
   </div>
 
   <!-- Main Game App -->
   <div class="app" id="app">
     <header>
-      <div class="brand">CARD UNIVERSE</div>
+      <div class="brand">
+        <span id="brand-name">CARD UNIVERSE</span>
+        <span id="header-verified" style="display:none;" class="verified-badge">✓</span>
+      </div>
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('collection', this)">Collection</button>
+        <button class="nav-tab" onclick="switchTab('social', this)">Community & Leaderboard</button>
+      </div>
       <div class="user-info">
         <div class="coins">🪙 <span id="user-coins">1000</span></div>
         <div id="user-display">Player</div>
@@ -164,29 +198,62 @@
     </header>
 
     <main>
-      <div class="dashboard">
-        <div>
-          <h2>Card Collection (<span id="collected-count">0</span>/158)</h2>
-          <p style="color:#9ca3af; font-size:0.85rem; margin-top: 4px;">Roll to collect all standard, transcendent, and infinity cards!</p>
+      <!-- COLLECTION TAB -->
+      <div id="tab-collection" class="tab-content active">
+        <!-- Admin Panel (Visible only to heinth) -->
+        <div id="admin-container" class="admin-panel" style="display:none;">
+          <h3>👑 Admin Control Center <span class="verified-badge">✓</span></h3>
+          <div class="admin-grid">
+            <div class="admin-box">
+              <h4>Spawn Currency</h4>
+              <input type="number" id="admin-gem-amt" value="5000" placeholder="Amount">
+              <button class="btn btn-admin" style="width:100%; padding:0.4rem;" onclick="adminSpawnCurrency()">Spawn Coins</button>
+            </div>
+            <div class="admin-box">
+              <h4>Gift Card to Player</h4>
+              <input type="text" id="gift-target" placeholder="Target Username">
+              <select id="gift-card-select"></select>
+              <button class="btn btn-admin" style="width:100%; padding:0.4rem;" onclick="adminGiftCard()">Send Card</button>
+            </div>
+            <div class="admin-box">
+              <h4>Ban / Unban Account</h4>
+              <input type="text" id="ban-target" placeholder="Username to ban">
+              <button class="btn" style="width:100%; padding:0.4rem; background:#dc2626; color:white;" onclick="adminToggleBan()">Ban/Unban</button>
+            </div>
+          </div>
         </div>
-        <div class="roll-btns">
-          <button class="btn btn-primary" onclick="rollCard(1)">Roll 1x (10 🪙)</button>
-          <button class="btn btn-gold" onclick="rollCard(10)">Roll 10x (100 🪙)</button>
+
+        <div class="dashboard">
+          <div>
+            <h2>Card Collection (<span id="collected-count">0</span>/158)</h2>
+            <p style="color:#9ca3af; font-size:0.85rem; margin-top: 4px;">Roll to collect all standard, transcendent, and infinity cards!</p>
+          </div>
+          <div class="roll-btns">
+            <button class="btn btn-primary" onclick="rollCard(1)">Roll 1x (10 🪙)</button>
+            <button class="btn btn-gold" onclick="rollCard(10)">Roll 10x (100 🪙)</button>
+          </div>
         </div>
+
+        <div class="filter-bar">
+          <button class="filter-chip active" onclick="filterCards('all', this)">All (158)</button>
+          <button class="filter-chip" onclick="filterCards('common', this)">Common (60)</button>
+          <button class="filter-chip" onclick="filterCards('uncommon', this)">Uncommon (45)</button>
+          <button class="filter-chip" onclick="filterCards('rare', this)">Rare (30)</button>
+          <button class="filter-chip" onclick="filterCards('legendary', this)">Legendary (15)</button>
+          <button class="filter-chip" onclick="filterCards('mythical', this)">Mythical (10)</button>
+          <button class="filter-chip" onclick="filterCards('transcendent', this)">Transcendent (2)</button>
+          <button class="filter-chip" onclick="filterCards('infinity', this)">Infinity (1)</button>
+        </div>
+
+        <div style="margin-top: 1.5rem;" class="card-grid" id="card-grid"></div>
       </div>
 
-      <div class="filter-bar">
-        <button class="filter-chip active" onclick="filterCards('all', this)">All (158)</button>
-        <button class="filter-chip" onclick="filterCards('common', this)">Common (60)</button>
-        <button class="filter-chip" onclick="filterCards('uncommon', this)">Uncommon (45)</button>
-        <button class="filter-chip" onclick="filterCards('rare', this)">Rare (30)</button>
-        <button class="filter-chip" onclick="filterCards('legendary', this)">Legendary (15)</button>
-        <button class="filter-chip" onclick="filterCards('mythical', this)">Mythical (10)</button>
-        <button class="filter-chip" onclick="filterCards('transcendent', this)">Transcendent (2)</button>
-        <button class="filter-chip" onclick="filterCards('infinity', this)">Infinity (1)</button>
+      <!-- SOCIAL TAB -->
+      <div id="tab-social" class="tab-content">
+        <h2 style="margin-bottom: 1rem;">Player Community & Leaderboard</h2>
+        <p style="color:#9ca3af; margin-bottom: 1.5rem; font-size: 0.9rem;">Most popular players ranked by followers appear at the top.</p>
+        <div class="social-list" id="social-user-list"></div>
       </div>
-
-      <div style="margin-top: 1.5rem;" class="card-grid" id="card-grid"></div>
     </main>
   </div>
 
@@ -197,6 +264,33 @@
   </div>
 
   <script>
+    // Initialize Default Users (Admin heinth & 4-letter extra rare users)
+    function initDatabase() {
+      let users = JSON.parse(localStorage.getItem('cu_users') || '{}');
+      const defaultAccounts = {
+        "heinth": { pass: "hein25414", coins: 50000, inventory: {}, followers: [], following: [], isAdmin: true, verified: true },
+        "hein": { pass: "rare123", coins: 2000, inventory: {}, followers: [], following: [], isAdmin: false, verified: false },
+        "boss": { pass: "rare123", coins: 2000, inventory: {}, followers: [], following: [], isAdmin: false, verified: false },
+        "davd": { pass: "rare123", coins: 2000, inventory: {}, followers: [], following: [], isAdmin: false, verified: false },
+        "divf": { pass: "rare123", coins: 2000, inventory: {}, followers: [], following: [], isAdmin: false, verified: false },
+        "dove": { pass: "rare123", coins: 2000, inventory: {}, followers: [], following: [], isAdmin: false, verified: false }
+      };
+
+      for (let acc in defaultAccounts) {
+        if (!users[acc]) {
+          users[acc] = defaultAccounts[acc];
+        } else {
+          // Ensure admin privileges & verified properties persist
+          if (acc === "heinth") {
+            users[acc].isAdmin = true;
+            users[acc].verified = true;
+          }
+        }
+      }
+      localStorage.setItem('cu_users', JSON.stringify(users));
+    }
+    initDatabase();
+
     // Audio Synthesizer Engine
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSFX(type) {
@@ -307,7 +401,6 @@
             }
           });
         } else if (type === 'infinity') {
-          // Infinity symbol parametric equation
           particles.forEach(p => {
             p.t += p.speed;
             const scale = Math.min(cx, cy) * 0.5;
@@ -320,7 +413,7 @@
           });
         }
 
-        if (frame < 240) { // Run for 4 seconds
+        if (frame < 240) {
           vfxAnimationId = requestAnimationFrame(animate);
         } else {
           canvas.style.display = 'none';
@@ -332,7 +425,6 @@
 
     // Complete 158 Card Database
     const cardDatabase = [
-      // Common (60)
       ...Array.from({length: 60}, (_, i) => ({
         id: i + 1,
         name: [
@@ -352,8 +444,6 @@
         rarity: "common",
         rate: 0.45
       })),
-
-      // Uncommon (45)
       ...Array.from({length: 45}, (_, i) => ({
         id: i + 61,
         name: [
@@ -370,8 +460,6 @@
         rarity: "uncommon",
         rate: 0.30
       })),
-
-      // Rare (30)
       ...Array.from({length: 30}, (_, i) => ({
         id: i + 106,
         name: [
@@ -385,8 +473,6 @@
         rarity: "rare",
         rate: 0.15
       })),
-
-      // Legendary (15)
       ...Array.from({length: 15}, (_, i) => ({
         id: i + 136,
         name: [
@@ -398,8 +484,6 @@
         rarity: "legendary",
         rate: 0.07
       })),
-
-      // Mythical (10)
       ...Array.from({length: 10}, (_, i) => ({
         id: i + 151,
         name: [
@@ -410,16 +494,11 @@
         rarity: "mythical",
         rate: 0.025
       })),
-
-      // Transcendent (2)
       { id: 161, name: "Quantum Galaxy", rarity: "transcendent", rate: 0.004, vfx: "quantum" },
       { id: 162, name: "Universal Intelligent", rarity: "transcendent", rate: 0.004, vfx: "universal" },
-
-      // Infinity (1)
       { id: 163, name: "The Infinity", rarity: "infinity", rate: 0.002, vfx: "infinity" }
     ];
 
-    // Auth & Game State
     let currentUser = null;
     let isRegisterMode = false;
 
@@ -439,18 +518,53 @@
 
       if (isRegisterMode) {
         if (users[user]) return alert("Username already exists!");
-        users[user] = { pass, coins: 1000, inventory: {} };
+        
+        // 5 character rule for registration (except extra rare 4 letter users or admin)
+        const allowedFourLetterUsers = ["hein", "boss", "davd", "divf", "dove"];
+        if (user.length < 5 && !allowedFourLetterUsers.includes(user) && user !== "heinth") {
+          return alert("Username must be at least 5 letters long!");
+        }
+
+        const isAdm = (user === "heinth");
+        users[user] = {
+          pass,
+          coins: isAdm ? 50000 : 1000,
+          inventory: {},
+          followers: [],
+          following: [],
+          isAdmin: isAdm,
+          verified: isAdm,
+          banned: false
+        };
         localStorage.setItem('cu_users', JSON.stringify(users));
         alert("Account created successfully!");
       }
 
       if (!users[user] || users[user].pass !== pass) return alert("Invalid credentials!");
+      if (users[user].banned) return alert("This account has been banned by an admin.");
 
       currentUser = user;
       document.getElementById('auth-screen').style.display = 'none';
       document.getElementById('app').style.display = 'flex';
+      
+      const userData = users[currentUser];
       document.getElementById('user-display').innerText = currentUser;
+      
+      if (userData.verified || userData.isAdmin) {
+        document.getElementById('header-verified').style.display = 'inline-flex';
+      } else {
+        document.getElementById('header-verified').style.display = 'none';
+      }
+
+      if (userData.isAdmin) {
+        document.getElementById('admin-container').style.display = 'block';
+        populateGiftCardSelect();
+      } else {
+        document.getElementById('admin-container').style.display = 'none';
+      }
+
       updateUI();
+      updateSocialUI();
     }
 
     function logout() {
@@ -468,6 +582,14 @@
       const users = JSON.parse(localStorage.getItem('cu_users') || '{}');
       users[currentUser] = data;
       localStorage.setItem('cu_users', JSON.stringify(users));
+    }
+
+    function switchTab(tabName, btn) {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      if (tabName === 'social') updateSocialUI();
     }
 
     function updateUI(filterRarity = 'all') {
@@ -504,7 +626,7 @@
       updateUI(rarity);
     }
 
-    // Roll Gacha System
+    // Roll Gacha System (Admin heinth gets higher legendary/transcendent drop luck)
     function rollCard(times) {
       const data = getUserData();
       const cost = times * 10;
@@ -519,7 +641,12 @@
         let selected = cardDatabase[0];
 
         for (const card of cardDatabase) {
-          cumulative += card.rate / 60; // Normalize probabilities across total pool
+          let multiplier = 1;
+          // Admin luck boost
+          if (data.isAdmin && ['legendary', 'mythical', 'transcendent', 'infinity'].includes(card.rarity)) {
+            multiplier = 3.5;
+          }
+          cumulative += (card.rate * multiplier) / 60;
           if (rand <= cumulative) {
             selected = card;
             break;
@@ -533,7 +660,6 @@
       saveUserData(data);
       updateUI();
 
-      // Show Results Modal
       const modal = document.getElementById('roll-modal');
       const resultsContainer = document.getElementById('roll-results');
       resultsContainer.innerHTML = '';
@@ -556,14 +682,117 @@
       });
 
       modal.style.display = 'flex';
-
-      if (highestRarityVFX) {
-        triggerVFX(highestRarityVFX);
-      }
+      if (highestRarityVFX) triggerVFX(highestRarityVFX);
     }
 
     function closeModal() {
       document.getElementById('roll-modal').style.display = 'none';
+    }
+
+    // Admin Tools
+    function populateGiftCardSelect() {
+      const select = document.getElementById('gift-card-select');
+      select.innerHTML = '';
+      cardDatabase.forEach(card => {
+        const opt = document.createElement('option');
+        opt.value = card.id;
+        opt.innerText = `[${card.rarity.toUpperCase()}] ${card.name}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function adminSpawnCurrency() {
+      const amt = parseInt(document.getElementById('admin-gem-amt').value) || 0;
+      const data = getUserData();
+      if (!data.isAdmin) return;
+      data.coins += amt;
+      saveUserData(data);
+      updateUI();
+      alert(`Spawned ${amt} coins successfully!`);
+    }
+
+    function adminGiftCard() {
+      const targetName = document.getElementById('gift-target').value.trim();
+      const cardId = parseInt(document.getElementById('gift-card-select').value);
+      const users = JSON.parse(localStorage.getItem('cu_users') || '{}');
+
+      if (!users[targetName]) return alert("Target user not found!");
+      
+      users[targetName].inventory[cardId] = (users[targetName].inventory[cardId] || 0) + 1;
+      localStorage.setItem('cu_users', JSON.stringify(users));
+      alert(`Successfully gifted card to ${targetName}!`);
+    }
+
+    function adminToggleBan() {
+      const targetName = document.getElementById('ban-target').value.trim();
+      const users = JSON.parse(localStorage.getItem('cu_users') || '{}');
+      if (!users[targetName]) return alert("User not found!");
+      if (targetName === "heinth") return alert("Cannot ban the head admin!");
+
+      users[targetName].banned = !users[targetName].banned;
+      localStorage.setItem('cu_users', JSON.stringify(users));
+      alert(`User ${targetName} ban status toggled to: ${users[targetName].banned}`);
+    }
+
+    // Social & Follow System
+    function updateSocialUI() {
+      const users = JSON.parse(localStorage.getItem('cu_users') || '{}');
+      const listEl = document.getElementById('social-user-list');
+      listEl.innerHTML = '';
+
+      // Sort users by follower count (most popular on top)
+      const sortedUsers = Object.keys(users).map(username => ({
+        username,
+        ...users[username],
+        followerCount: (users[username].followers || []).length
+      })).sort((a, b) => b.followerCount - a.followerCount);
+
+      sortedUsers.forEach(u => {
+        if (u.username === currentUser) return; // Skip self
+
+        const data = getUserData();
+        const isFollowing = (data.following || []).includes(u.username);
+
+        const row = document.createElement('div');
+        row.className = 'user-row';
+        row.innerHTML = `
+          <div class="user-row-left">
+            <div>
+              <div style="font-weight:700; display:flex; align-items:center; gap:0.4rem;">
+                ${u.username}
+                ${u.verified || u.isAdmin ? '<span class="verified-badge">✓</span>' : ''}
+              </div>
+              <div style="font-size:0.8rem; color:#9ca3af; margin-top:2px;">Followers: ${u.followerCount}</div>
+            </div>
+          </div>
+          <div class="user-row-actions">
+            <button class="btn" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:${isFollowing ? '#374151' : 'var(--accent)'}; color:white;" onclick="toggleFollow('${u.username}')">
+              ${isFollowing ? 'Unfollow' : 'Follow'}
+            </button>
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    function toggleFollow(targetUsername) {
+      const users = JSON.parse(localStorage.getItem('cu_users') || '{}');
+      const myData = users[currentUser];
+
+      if (!myData.following) myData.following = [];
+      if (!users[targetUsername].followers) users[targetUsername].followers = [];
+
+      const index = myData.following.indexOf(targetUsername);
+      if (index > -1) {
+        myData.following.splice(index, 1);
+        users[targetUsername].followers = users[targetUsername].followers.filter(f => f !== currentUser);
+      } else {
+        myData.following.push(targetUsername);
+        users[targetUsername].followers.push(currentUser);
+      }
+
+      localStorage.setItem('cu_users', JSON.stringify(users));
+      updateSocialUI();
     }
   </script>
 </body>
