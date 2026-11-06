@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Universe - 158 Gacha Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090a0f;
+      --panel: #13151f;
+      --card-bg: #1c1f2e;
+      --accent: #6366f1;
+      --text: #f3f4f6;
+      --common: #9ca3af;
+      --uncommon: #22c55e;
+      --rare: #3b82f6;
+      --legendary: #eab308;
+      --mythical: #a855f7;
+      --transcendent: #ec4899;
+      --infinity: #06b6d4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+    /* VFX Canvas */
+    #vfx-canvas {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 999; display: none;
+    }
+
+    /* Auth Screen */
+    .auth-overlay {
+      position: fixed; inset: 0; background: rgba(9, 10, 15, 0.95);
+      backdrop-filter: blur(10px); display: flex; justify-content: center;
+      align-items: center; z-index: 500;
+    }
+    .auth-card {
+      background: var(--panel); border: 1px solid #2a2e45; border-radius: 16px;
+      padding: 2rem; width: 360px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .auth-card h1 { font-family: 'Cinzel', serif; color: var(--accent); margin-bottom: 1rem; }
+    .auth-input {
+      width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: #0d0e14;
+      border: 1px solid #2a2e45; color: white; border-radius: 8px; outline: none;
+    }
+    .auth-btn {
+      width: 100%; padding: 0.8rem; margin-top: 1rem; background: var(--accent);
+      border: none; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;
+    }
+    .auth-toggle { font-size: 0.85rem; color: #9ca3af; margin-top: 1rem; cursor: pointer; }
+    .auth-toggle span { color: var(--accent); text-decoration: underline; }
+
+    /* Layout */
+    .app { display: none; min-height: 100vh; flex-direction: column; }
+    header {
+      background: var(--panel); border-bottom: 1px solid #2a2e45; padding: 1rem 2rem;
+      display: flex; justify-content: space-between; align-items: center; sticky: top; z-index: 100;
+    }
+    .brand { font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 900; color: #fff; }
+    .user-info { display: flex; gap: 1.5rem; align-items: center; font-weight: 600; }
+    .coins { color: #f59e0b; display: flex; align-items: center; gap: 0.3rem; }
+
+    main { flex: 1; padding: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+    /* Controls */
+    .dashboard { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .roll-btns { display: flex; gap: 1rem; }
+    .btn {
+      padding: 0.8rem 1.5rem; border: none; border-radius: 12px; font-weight: 700;
+      cursor: pointer; transition: transform 0.1s, filter 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; }
+    .btn-gold { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+
+    /* Tabs & Filter */
+    .filter-bar { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; }
+    .filter-chip {
+      padding: 0.4rem 0.8rem; background: #1a1d2d; border: 1px solid #2a2e45;
+      border-radius: 20px; font-size: 0.85rem; cursor: pointer; color: #9ca3af; whitespace: nowrap;
+    }
+    .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* Grid */
+    .card-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1.2rem;
+    }
+    .card-item {
+      background: var(--card-bg); border-radius: 12px; padding: 1rem; position: relative;
+      border: 2px solid #2a2e45; transition: all 0.2s; display: flex; flex-direction: column;
+      align-items: center; text-align: center; height: 220px; justify-content: space-between;
+      overflow: hidden;
+    }
+    .card-item.locked { opacity: 0.3; filter: grayscale(1); }
+    .card-item.common { border-color: var(--common); }
+    .card-item.uncommon { border-color: var(--uncommon); }
+    .card-item.rare { border-color: var(--rare); }
+    .card-item.legendary { border-color: var(--legendary); box-shadow: 0 0 10px rgba(234,179,8,0.2); }
+    .card-item.mythical { border-color: var(--mythical); box-shadow: 0 0 15px rgba(168,85,247,0.3); }
+    .card-item.transcendent { border-color: var(--transcendent); box-shadow: 0 0 20px rgba(236,72,153,0.5); }
+    .card-item.infinity { border-color: var(--infinity); box-shadow: 0 0 25px rgba(6,182,212,0.8); animation: pulse 2s infinite; }
+
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+    .card-badge {
+      font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 10px; color: #fff; margin-bottom: 0.5rem;
+    }
+    .bg-common { background: var(--common); }
+    .bg-uncommon { background: var(--uncommon); }
+    .bg-rare { background: var(--rare); }
+    .bg-legendary { background: var(--legendary); }
+    .bg-mythical { background: var(--mythical); }
+    .bg-transcendent { background: var(--transcendent); }
+    .bg-infinity { background: var(--infinity); color: #000; }
+
+    .card-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; line-height: 1.2; }
+    .card-count { font-size: 0.75rem; color: #9ca3af; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; }
+
+    /* Roll Overlay Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+      display: none; justify-content: center; align-items: center; z-index: 600; flex-direction: column;
+    }
+    .roll-display { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; max-width: 90vw; }
+    .roll-card {
+      width: 180px; height: 260px; background: var(--panel); border-radius: 16px;
+      display: flex; flex-direction: column; justify-content: space-between; padding: 1.2rem;
+      align-items: center; text-align: center; animation: cardPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes cardPop { 0% { transform: scale(0) rotate(-10deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+    .close-modal { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+
+  <canvas id="vfx-canvas"></canvas>
+
+  <!-- Auth Screen -->
+  <div class="auth-overlay" id="auth-screen">
+    <div class="auth-card">
+      <h1 id="auth-title">LOGIN</h1>
+      <input type="text" id="username" class="auth-input" placeholder="Username">
+      <input type="password" id="password" class="auth-input" placeholder="Password">
+      <button class="auth-btn" id="auth-submit-btn" onclick="handleAuth()">Play</button>
+      <div class="auth-toggle" onclick="toggleAuthMode()">
+        <span id="auth-toggle-text">Need an account? Register</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Game App -->
+  <div class="app" id="app">
+    <header>
+      <div class="brand">CARD UNIVERSE</div>
+      <div class="user-info">
+        <div class="coins">🪙 <span id="user-coins">1000</span></div>
+        <div id="user-display">Player</div>
+        <button class="btn" style="background:#ef4444; color:white; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="dashboard">
+        <div>
+          <h2>Card Collection (<span id="collected-count">0</span>/158)</h2>
+          <p style="color:#9ca3af; font-size:0.85rem; margin-top: 4px;">Roll to collect all standard, transcendent, and infinity cards!</p>
+        </div>
+        <div class="roll-btns">
+          <button class="btn btn-primary" onclick="rollCard(1)">Roll 1x (10 🪙)</button>
+          <button class="btn btn-gold" onclick="rollCard(10)">Roll 10x (100 🪙)</button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <button class="filter-chip active" onclick="filterCards('all', this)">All (158)</button>
+        <button class="filter-chip" onclick="filterCards('common', this)">Common (60)</button>
+        <button class="filter-chip" onclick="filterCards('uncommon', this)">Uncommon (45)</button>
+        <button class="filter-chip" onclick="filterCards('rare', this)">Rare (30)</button>
+        <button class="filter-chip" onclick="filterCards('legendary', this)">Legendary (15)</button>
+        <button class="filter-chip" onclick="filterCards('mythical', this)">Mythical (10)</button>
+        <button class="filter-chip" onclick="filterCards('transcendent', this)">Transcendent (2)</button>
+        <button class="filter-chip" onclick="filterCards('infinity', this)">Infinity (1)</button>
+      </div>
+
+      <div style="margin-top: 1.5rem;" class="card-grid" id="card-grid"></div>
+    </main>
+  </div>
+
+  <!-- Roll Result Modal -->
+  <div class="modal-overlay" id="roll-modal">
+    <div class="roll-display" id="roll-results"></div>
+    <button class="btn btn-primary close-modal" onclick="closeModal()">Collect Cards</button>
+  </div>
+
+  <script>
+    // Audio Synthesizer Engine
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSFX(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+      if (type === 'roll') {
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now); osc.stop(now + 0.15);
+      } else if (type === 'epic') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.8);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
+        osc.start(now); osc.stop(now + 0.8);
+      }
+    }
+
+    // Canvas VFX Engine for Special Cards
+    const canvas = document.getElementById('vfx-canvas');
+    const ctx = canvas.getContext('2d');
+    let vfxAnimationId = null;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function triggerVFX(type) {
+      canvas.style.display = 'block';
+      let particles = [];
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      let frame = 0;
+
+      if (type === 'quantum') {
+        for (let i = 0; i < 250; i++) {
+          particles.push({
+            angle: Math.random() * Math.PI * 2,
+            radius: Math.random() * Math.max(cx, cy),
+            speed: 0.02 + Math.random() * 0.03,
+            size: 1 + Math.random() * 3,
+            color: `hsl(${260 + Math.random() * 60}, 100%, 70%)`
+          });
+        }
+      } else if (type === 'universal') {
+        for (let i = 0; i < 150; i++) {
+          particles.push({
+            x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2,
+            size: 2 + Math.random() * 2, color: `hsl(${Math.random() * 360}, 90%, 65%)`
+          });
+        }
+      } else if (type === 'infinity') {
+        for (let i = 0; i < 400; i++) {
+          particles.push({
+            t: Math.random() * Math.PI * 2,
+            speed: 0.02 + Math.random() * 0.04,
+            size: 2 + Math.random() * 4,
+            hue: Math.random() * 360
+          });
+        }
+      }
+
+      function animate() {
+        ctx.fillStyle = 'rgba(9, 10, 15, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        frame++;
+
+        if (type === 'quantum') {
+          particles.forEach(p => {
+            p.angle += p.speed;
+            p.radius -= 0.5;
+            if (p.radius < 0) p.radius = Math.max(cx, cy);
+            const x = cx + Math.cos(p.angle) * p.radius;
+            const y = cy + Math.sin(p.angle) * p.radius;
+            ctx.beginPath();
+            ctx.arc(x, y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+          });
+        } else if (type === 'universal') {
+          particles.forEach((p, index) => {
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+            if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = p.color; ctx.fill();
+
+            for (let j = index + 1; j < particles.length; j++) {
+              const p2 = particles[j];
+              const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+              if (dist < 100) {
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y);
+                ctx.strokeStyle = `rgba(168, 85, 247, ${1 - dist / 100})`;
+                ctx.lineWidth = 0.5; ctx.stroke();
+              }
+            }
+          });
+        } else if (type === 'infinity') {
+          // Infinity symbol parametric equation
+          particles.forEach(p => {
+            p.t += p.speed;
+            const scale = Math.min(cx, cy) * 0.5;
+            const a = scale;
+            const x = cx + (a * Math.cos(p.t)) / (1 + Math.pow(Math.sin(p.t), 2));
+            const y = cy + (a * Math.sin(p.t) * Math.cos(p.t)) / (1 + Math.pow(Math.sin(p.t), 2));
+            ctx.beginPath(); ctx.arc(x, y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = `hsl(${p.hue + frame}, 100%, 70%)`;
+            ctx.fill();
+          });
+        }
+
+        if (frame < 240) { // Run for 4 seconds
+          vfxAnimationId = requestAnimationFrame(animate);
+        } else {
+          canvas.style.display = 'none';
+        }
+      }
+      if (vfxAnimationId) cancelAnimationFrame(vfxAnimationId);
+      animate();
+    }
+
+    // Complete 158 Card Database
+    const cardDatabase = [
+      // Common (60)
+      ...Array.from({length: 60}, (_, i) => ({
+        id: i + 1,
+        name: [
+          "Rusty Blade", "Wooden Shield", "Stone Pebble", "Faded Scroll", "Tiny Potion",
+          "Copper Coin", "Iron Nail", "Cloth Scrap", "Wild Herb", "Oak Branch",
+          "Broken Arrow", "Leather Strap", "Flint Stone", "Clay Jar", "Feather Wand",
+          "Dull Dagger", "Rope Knot", "Bone Shard", "Glass Marble", "Pine Cone",
+          "Straw Hat", "Torch Light", "Bronze Ring", "Dirt Chunk", "Old Key",
+          "Water Flask", "Bandage Roll", "Chipped Cup", "Wooden Spoon", "Sack of Salt",
+          "Iron Chain", "Candle Stub", "Fishing Hook", "Needle Thread", "Paper Kite",
+          "Small Bell", "Charcoal Piece", "River Stone", "Wheat Stalk", "Apple Core",
+          "Shell Casing", "Wool Yarn", "Tin Can", "Mossy Bark", "Snail Shell",
+          "Pebble Sling", "Leather Boot", "Wooden Bowl", "Rusty Key", "Leaf Charm",
+          "Dried Berry", "Clay Token", "Brass Button", "Bone Button", "Feather Quill",
+          "Ripped Page", "Twine Ball", "Copper Ring", "Iron Ring", "Stone Token"
+        ][i],
+        rarity: "common",
+        rate: 0.45
+      })),
+
+      // Uncommon (45)
+      ...Array.from({length: 45}, (_, i) => ({
+        id: i + 61,
+        name: [
+          "Steel Sword", "Iron Shield", "Magic Catalyst", "Health Flask", "Silver Amulet",
+          "Hunter Bow", "Knight Helmet", "Mana Crystal", "Enchanted Cloak", "Shadow Dagger",
+          "Flame Wand", "Frost Orb", "Thunder Gem", "Wind Boots", "Glowstone Pendant",
+          "Reinforced Armor", "Sharpened Spear", "Guardian Relic", "Venom Vial", "Solar Rune",
+          "Lunar Essence", "Falcon Feather", "Bear Claw", "Wolf Fang", "Serpent Scale",
+          "Steel Greaves", "Iron Gauntlet", "Rune Tome", "Alchemist Kit", "Tracker Compass",
+          "Starlight Ring", "Storm Catalyst", "Ember Shard", "Glacier Fragment", "Breezy Cape",
+          "Titanium Thread", "Mystic Mirror", "Sage Wand", "War Horn", "Sentinel Shield",
+          "Crossbow Shaft", "Spiked Mace", "Carved Idol", "Bladed Fan", "Crystal Dust"
+        ][i],
+        rarity: "uncommon",
+        rate: 0.30
+      })),
+
+      // Rare (30)
+      ...Array.from({length: 30}, (_, i) => ({
+        id: i + 106,
+        name: [
+          "Dragon Scale Shield", "Phoenix Feather Bow", "Void Crystal Wand", "Arcane Tome", "Titan Gauntlet",
+          "Celestial Crown", "Stormbringer Blade", "Inferno Ring", "Abyssal Pendant", "Starlight Cloak",
+          "Shadowstep Boots", "Glacial Warhammer", "Valkyrie Helmet", "Chrono Hourglass", "Soulstone Relic",
+          "Aether Core", "Eclipse Edge", "Thundergod Hammer", "Nebula Orb", "Spectral Dagger",
+          "Hydra Armor", "Seraphim Wings", "Rune-Forged Greaves", "Astral Mirror", "Doomsday Scythe",
+          "Nether Flame Flask", "Odin Spear", "Leviathan Trident", "Pegasus Harness", "Solaris Aegis"
+        ][i],
+        rarity: "rare",
+        rate: 0.15
+      })),
+
+      // Legendary (15)
+      ...Array.from({length: 15}, (_, i) => ({
+        id: i + 136,
+        name: [
+          "Excalibur Legend", "Dragon Lord Sovereign", "Celestial World Core", "Void Sovereign Staff",
+          "Eternal Phoenix Blade", "Omni Archangel Shield", "Chrono Time-Warp Relic", "Genesis Element Core",
+          "Abyssal God Scythe", "Supernova Greatsword", "Astral Overlord Crown", "Infinity Sentinel Sentinel",
+          "Divine Aegis Armor", "Chaos Weaver Thread", "Hyperion Sun Cannon"
+        ][i],
+        rarity: "legendary",
+        rate: 0.07
+      })),
+
+      // Mythical (10)
+      ...Array.from({length: 10}, (_, i) => ({
+        id: i + 151,
+        name: [
+          "Creation Essence", "Destroyer Singularity", "Cosmic Weaver God", "Timeless Oracle",
+          "Dimension Shatterer", "Godslayer Blade", "Eternity Nexus", "Omniscience Eye",
+          "Reality Bender", "Multiverse Catalyst"
+        ][i],
+        rarity: "mythical",
+        rate: 0.025
+      })),
+
+      // Transcendent (2)
+      { id: 161, name: "Quantum Galaxy", rarity: "transcendent", rate: 0.004, vfx: "quantum" },
+      { id: 162, name: "Universal Intelligent", rarity: "transcendent", rate: 0.004, vfx: "universal" },
+
+      // Infinity (1)
+      { id: 163, name: "The Infinity", rarity: "infinity", rate: 0.002, vfx: "infinity" }
+    ];
+
+    // Auth & Game State
+    let currentUser = null;
+    let isRegisterMode = false;
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById('auth-title').innerText = isRegisterMode ? 'REGISTER' : 'LOGIN';
+      document.getElementById('auth-submit-btn').innerText = isRegisterMode ? 'Create Account' : 'Play';
+      document.getElementById('auth-toggle-text').innerText = isRegisterMode ? 'Have an account? Login' : 'Need an account? Register';
+    }
+
+    function handleAuth() {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
+      if (!user || !pass) return alert("Please enter both username and password");
+
+      const users = JSON.parse(localStorage.getItem('cu_users') || '{}');
+
+      if (isRegisterMode) {
+        if (users[user]) return alert("Username already exists!");
+        users[user] = { pass, coins: 1000, inventory: {} };
+        localStorage.setItem('cu_users', JSON.stringify(users));
+        alert("Account created successfully!");
+      }
+
+      if (!users[user] || users[user].pass !== pass) return alert("Invalid credentials!");
+
+      currentUser = user;
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      document.getElementById('user-display').innerText = currentUser;
+      updateUI();
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+
+    function getUserData() {
+      const users = JSON.parse(localStorage.getItem('cu_users') || '{}');
+      return users[currentUser];
+    }
+
+    function saveUserData(data) {
+      const users = JSON.parse(localStorage.getItem('cu_users') || '{}');
+      users[currentUser] = data;
+      localStorage.setItem('cu_users', JSON.stringify(users));
+    }
+
+    function updateUI(filterRarity = 'all') {
+      const data = getUserData();
+      document.getElementById('user-coins').innerText = data.coins;
+
+      const grid = document.getElementById('card-grid');
+      grid.innerHTML = '';
+
+      let ownedTotal = 0;
+
+      cardDatabase.forEach(card => {
+        const owned = data.inventory[card.id] || 0;
+        if (owned > 0) ownedTotal++;
+
+        if (filterRarity !== 'all' && card.rarity !== filterRarity) return;
+
+        const cardEl = document.createElement('div');
+        cardEl.className = `card-item ${card.rarity} ${owned === 0 ? 'locked' : ''}`;
+        cardEl.innerHTML = `
+          <div class="card-badge bg-${card.rarity}">${card.rarity}</div>
+          <div class="card-title">${card.name}</div>
+          <div class="card-count">${owned > 0 ? `Owned: ${owned}` : 'Locked'}</div>
+        `;
+        grid.appendChild(cardEl);
+      });
+
+      document.getElementById('collected-count').innerText = ownedTotal;
+    }
+
+    function filterCards(rarity, btn) {
+      document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateUI(rarity);
+    }
+
+    // Roll Gacha System
+    function rollCard(times) {
+      const data = getUserData();
+      const cost = times * 10;
+      if (data.coins < cost) return alert("Not enough coins!");
+
+      data.coins -= cost;
+      const rolledResults = [];
+
+      for (let i = 0; i < times; i++) {
+        const rand = Math.random();
+        let cumulative = 0;
+        let selected = cardDatabase[0];
+
+        for (const card of cardDatabase) {
+          cumulative += card.rate / 60; // Normalize probabilities across total pool
+          if (rand <= cumulative) {
+            selected = card;
+            break;
+          }
+        }
+
+        data.inventory[selected.id] = (data.inventory[selected.id] || 0) + 1;
+        rolledResults.push(selected);
+      }
+
+      saveUserData(data);
+      updateUI();
+
+      // Show Results Modal
+      const modal = document.getElementById('roll-modal');
+      const resultsContainer = document.getElementById('roll-results');
+      resultsContainer.innerHTML = '';
+
+      let highestRarityVFX = null;
+
+      rolledResults.forEach(card => {
+        playSFX(['mythical', 'transcendent', 'infinity'].includes(card.rarity) ? 'epic' : 'roll');
+        if (card.vfx) highestRarityVFX = card.vfx;
+
+        const cardEl = document.createElement('div');
+        cardEl.className = `roll-card ${card.rarity}`;
+        cardEl.style.border = `2px solid var(--${card.rarity})`;
+        cardEl.innerHTML = `
+          <div class="card-badge bg-${card.rarity}">${card.rarity}</div>
+          <div class="card-title" style="color:#fff;">${card.name}</div>
+          <div style="font-size:0.75rem; color:#9ca3af;">NEW!</div>
+        `;
+        resultsContainer.appendChild(cardEl);
+      });
+
+      modal.style.display = 'flex';
+
+      if (highestRarityVFX) {
+        triggerVFX(highestRarityVFX);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('roll-modal').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
